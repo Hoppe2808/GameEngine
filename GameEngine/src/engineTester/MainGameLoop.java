@@ -6,6 +6,7 @@ import java.util.Random;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
+import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 
@@ -45,7 +46,13 @@ public class MainGameLoop {
 		DisplayManager.createDisplay();
 
 		Loader loader = new Loader();
-		MasterRenderer renderer = new MasterRenderer(loader);
+		
+		RawModel bunnyModel = OBJLoader.loadObjModel("bunny", loader);
+		TexturedModel textureBunny = new TexturedModel(bunnyModel, new ModelTexture(loader.loadTexture("white")));
+		Player player = new Player(textureBunny, new Vector3f(400, 0, -400), 0, 180, 0, 0.5f);
+		Camera camera = new Camera(player);
+		
+		MasterRenderer renderer = new MasterRenderer(loader, camera);
 		ParticleMaster.init(loader, renderer.getProjectionMatrix());
 		
 		//Terrain textures
@@ -74,7 +81,7 @@ public class MainGameLoop {
 		ModelTexture texture = treeModel.getTexture();
 		texture.setShineDamper(10);
 		texture.setReflectivity(2);
-		Light light = new Light(new Vector3f(2000, 10000, -1000), new Vector3f(1.5f, 1.5f, 1.5f));
+		Light light = new Light(new Vector3f(200000, 1000000, -100000), new Vector3f(1f, 1f, 1f));
 		ArrayList<Light> lights = new ArrayList<Light>();
 		ArrayList<Entity> entities = new ArrayList<>();
 		ArrayList<Entity> normalMapEntities = new ArrayList<>();
@@ -125,14 +132,11 @@ public class MainGameLoop {
 			entities.add(new Entity(fernModel, r.nextInt(4), new Vector3f(x, y, z), 0, 0, 0f, 0.7f));
 		}
 		
-		RawModel bunnyModel = OBJLoader.loadObjModel("bunny", loader);
-		TexturedModel textureBunny = new TexturedModel(bunnyModel, new ModelTexture(loader.loadTexture("white")));
-		Player player = new Player(textureBunny, new Vector3f(400, 0, -400), 0, 180, 0, 0.5f);
-		Camera camera = new Camera(player);
-		
 		Mob mob = new Mob(textureBunny, new Vector3f(450, 0, -400), 0, 180, 0, 2f);
 		
 		ArrayList<GuiTexture> guis = new ArrayList<>();
+		
+		//guis.add(new GuiTexture(renderer.getShadowMaptexture(), new Vector2f(0.5f, 0.5f), new Vector2f(0.5f, 0.5f)));
 		
 		GuiRenderer guiRenderer = new GuiRenderer(loader);
 		
@@ -171,6 +175,7 @@ public class MainGameLoop {
 			
 			ParticleMaster.update(camera);
 			
+			renderer.renderShadowMap(entities, light);
 			GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
 			
 			fbos.bindReflectionFrameBuffer();

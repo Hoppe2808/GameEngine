@@ -54,15 +54,23 @@ public class Mob extends Entity{
 	}
 	private void generateMoveSet(){
 		int move = r.nextInt(10);
-		if(move == 1){
+		if(move == 0){
 			//Move speed
 			currentSpeed = RUN_SPEED;
-		}else if(move == 2){
+		}else if(move == 1){
 			//Turn speed
-			currentTurnSpeed = TURN_SPEED;
-		}else if(move == 3){
+			move = r.nextInt(2);
+			if(move == 0){
+				currentTurnSpeed = TURN_SPEED;
+			}else if(move == 1){
+				currentTurnSpeed = -TURN_SPEED;
+			}
+		}else if(move == 2){
 			//Jump
 			jump();
+		}else if(move == 3){
+			currentSpeed = RUN_SPEED;
+			currentTurnSpeed = TURN_SPEED;
 		}
 	}
 }
