@@ -12,6 +12,7 @@ import org.lwjgl.util.vector.Vector4f;
 import entities.Camera;
 import entities.Entity;
 import entities.Light;
+import entities.Mob;
 import entities.Player;
 import guis.GuiRenderer;
 import guis.GuiTexture;
@@ -73,7 +74,7 @@ public class MainGameLoop {
 		ModelTexture texture = treeModel.getTexture();
 		texture.setShineDamper(10);
 		texture.setReflectivity(2);
-		Light light = new Light(new Vector3f(10000, 10000, -7000), new Vector3f(1f, 1f, 1f));
+		Light light = new Light(new Vector3f(2000, 10000, -1000), new Vector3f(1.5f, 1.5f, 1.5f));
 		ArrayList<Light> lights = new ArrayList<Light>();
 		ArrayList<Entity> entities = new ArrayList<>();
 		ArrayList<Entity> normalMapEntities = new ArrayList<>();
@@ -129,6 +130,8 @@ public class MainGameLoop {
 		Player player = new Player(textureBunny, new Vector3f(400, 0, -400), 0, 180, 0, 0.5f);
 		Camera camera = new Camera(player);
 		
+		Mob mob = new Mob(textureBunny, new Vector3f(450, 0, -400), 0, 180, 0, 2f);
+		
 		ArrayList<GuiTexture> guis = new ArrayList<>();
 		
 		GuiRenderer guiRenderer = new GuiRenderer(loader);
@@ -155,6 +158,7 @@ public class MainGameLoop {
 		while(!Display.isCloseRequested()){
 			//Gamelogic
 			player.move(terrain);
+			mob.move(terrain);
 			camera.move();
 			picker.update();
 			
@@ -175,15 +179,18 @@ public class MainGameLoop {
 			camera.invertPitch();
 			renderer.renderScene(entities, normalMapEntities, terrains, lights, camera, new Vector4f(0, 1, 0, -waters.get(0).getHeight() + 0.6f));
 			renderer.processEntity(player);
+			renderer.processEntity(mob);
 			camera.getPosition().y += distance;
 			camera.invertPitch();
 			
 			fbos.bindRefractionFrameBuffer();
 			renderer.renderScene(entities, normalMapEntities, terrains, lights, camera, new Vector4f(0, -1, 0, waters.get(0).getHeight()));
 			renderer.processEntity(player);
+			renderer.processEntity(mob);
 			
 			fbos.unbindCurrentFrameBuffer();
 			renderer.processEntity(player);
+			renderer.processEntity(mob);
 			renderer.renderScene(entities, normalMapEntities, terrains, lights, camera, new Vector4f(0, -1, 0, 15000));
 			waterRenderer.render(waters, camera, light);
 			

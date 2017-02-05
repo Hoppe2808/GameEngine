@@ -1,27 +1,36 @@
 package entities;
 
-import org.lwjgl.input.Keyboard;
+import java.util.Random;
+
 import org.lwjgl.util.vector.Vector3f;
 
 import models.TexturedModel;
 import renderEngine.DisplayManager;
 import terrains.Terrain;
 
-public class Player extends Entity{
+public class Mob extends Entity{
 	
-	private static final float RUN_SPEED = 200, TURN_SPEED = 160, JUMP_POWER = 60;
+	private static final float RUN_SPEED = 50, TURN_SPEED = 160, JUMP_POWER = 60;
 	private static final float TERRAIN_HEIGHT = 0;
 	public static final float GRAVITY = -100;
 	private float health = 100;
 	private float damage = 10;
 	private float currentSpeed = 0, currentTurnSpeed = 0, upwardsSpeed = 0;
 	private boolean isInAir = false;
+	private int moveInterval;
+	Random r = new Random();
 
-	public Player(TexturedModel model, Vector3f position, float rotX, float rotY, float rotZ, float scale) {
+	public Mob(TexturedModel model, Vector3f position, float rotX, float rotY, float rotZ, float scale) {
 		super(model, position, rotX, rotY, rotZ, scale);
+		moveInterval = 100;
 	}
 	public void move(Terrain terrain){
-		checkInputs();
+		if(moveInterval == 0){
+			currentSpeed = 0;
+			currentTurnSpeed = 0;
+			generateMoveSet();
+			moveInterval = r.nextInt(151-50) + 50;
+		}
 		super.increaseRotation(0, currentTurnSpeed * DisplayManager.getFrameTimeSeconds(), 0);
 		float distance = currentSpeed * DisplayManager.getFrameTimeSeconds();
 		float dx = (float) (distance * Math.sin(Math.toRadians(super.getRotY())));
@@ -35,6 +44,7 @@ public class Player extends Entity{
 			isInAir = false;
 			super.getPosition().y = terrainHeight;
 		}
+		moveInterval--;
 	}
 	private void jump(){
 		if(!isInAir){
@@ -42,24 +52,17 @@ public class Player extends Entity{
 			isInAir = true;
 		}
 	}
-	private void checkInputs(){
-		if(Keyboard.isKeyDown(Keyboard.KEY_W)){
-			this.currentSpeed = RUN_SPEED;
-		}else if(Keyboard.isKeyDown(Keyboard.KEY_S)){
-			this.currentSpeed = -RUN_SPEED;
-		}else{
-			this.currentSpeed = 0;
-		}
-		if(Keyboard.isKeyDown(Keyboard.KEY_D)){
-			this.currentTurnSpeed = -TURN_SPEED;
-		}else if(Keyboard.isKeyDown(Keyboard.KEY_A)){
-			this.currentTurnSpeed = TURN_SPEED;
-		}else{
-			this.currentTurnSpeed = 0;
-		}
-		if(Keyboard.isKeyDown(Keyboard.KEY_SPACE)){
+	private void generateMoveSet(){
+		int move = r.nextInt(10);
+		if(move == 1){
+			//Move speed
+			currentSpeed = RUN_SPEED;
+		}else if(move == 2){
+			//Turn speed
+			currentTurnSpeed = TURN_SPEED;
+		}else if(move == 3){
+			//Jump
 			jump();
 		}
 	}
-
 }
