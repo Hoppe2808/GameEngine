@@ -16,6 +16,7 @@ public class Player extends Entity{
 	private float damage = 10;
 	private float currentSpeed = 0, currentTurnSpeed = 0, upwardsSpeed = 0;
 	private boolean isInAir = false;
+	private Vector3f direction = new Vector3f(1, 0, 1);
 
 	public Player(TexturedModel model, Vector3f position, float rotX, float rotY, float rotZ, float scale) {
 		super(model, position, rotX, rotY, rotZ, scale);
@@ -26,6 +27,10 @@ public class Player extends Entity{
 		float distance = currentSpeed * DisplayManager.getFrameTimeSeconds();
 		float dx = (float) (distance * Math.sin(Math.toRadians(super.getRotY())));
 		float dz = (float) (distance * Math.cos(Math.toRadians(super.getRotY())));
+		if(dx != 0 && dz != 0){
+			direction.x = dx;
+			direction.z = dz;
+		}
 		super.increasePosition(dx, 0, dz);
 		upwardsSpeed += GRAVITY * DisplayManager.getFrameTimeSeconds();
 		super.increasePosition(0, upwardsSpeed * DisplayManager.getFrameTimeSeconds(), 0);
@@ -61,5 +66,9 @@ public class Player extends Entity{
 			jump();
 		}
 	}
+	public Vector3f getDirection() {
+		return direction;
+	}
+	
 
 }

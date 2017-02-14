@@ -6,7 +6,6 @@ import java.util.Random;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
-import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 
@@ -25,6 +24,8 @@ import objConverter.OBJFileLoader;
 import particles.ParticleMaster;
 import particles.ParticleSystem;
 import particles.ParticleTexture;
+import postProcessing.Fbo;
+import postProcessing.PostProcessing;
 import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
@@ -49,7 +50,7 @@ public class MainGameLoop {
 		
 		RawModel bunnyModel = OBJLoader.loadObjModel("bunny", loader);
 		TexturedModel textureBunny = new TexturedModel(bunnyModel, new ModelTexture(loader.loadTexture("white")));
-		Player player = new Player(textureBunny, new Vector3f(400, 0, -400), 0, 180, 0, 0.5f);
+		Player player = new Player(textureBunny, new Vector3f(400, 0, -400), 0, 180, 0, 0.7f);
 		Camera camera = new Camera(player);
 		
 		MasterRenderer renderer = new MasterRenderer(loader, camera);
@@ -111,7 +112,7 @@ public class MainGameLoop {
 			float y = terrain.getHeightOfTerrain(x, z);
 			entities.add(new Entity(treeModel, new Vector3f(x, y, z), 0, 0, 0f, 0.8f));
 		}
-		for (int i = 0; i < 750; i++){
+		for (int i = 0; i < 1250; i++){
 			float x = r.nextFloat() * 800;
 			float z = r.nextFloat() * -800;
 			while(terrain.getHeightOfTerrain(x, z) < 0){
@@ -119,9 +120,10 @@ public class MainGameLoop {
 				z = r.nextFloat() * -800;
 			}
 			float y = terrain.getHeightOfTerrain(x, z);
-			entities.add(new Entity(grassModel, new Vector3f(x, y, z), 0, 0, 0f, 1f));
+			entities.add(new Entity(fernModel, r.nextInt(4), new Vector3f(x, y, z), 0, 0, 0f, 1f));
 		}
-		for (int i = 0; i < 450; i++){
+		ArrayList<Mob> mobs = new ArrayList();
+		for (int i = 0; i < 100; i++){
 			float x = r.nextFloat() * 800;
 			float z = r.nextFloat() * -800;
 			while(terrain.getHeightOfTerrain(x, z) < 0){
@@ -129,15 +131,14 @@ public class MainGameLoop {
 				z = r.nextFloat() * -800;
 			}
 			float y = terrain.getHeightOfTerrain(x, z);
-			entities.add(new Entity(fernModel, r.nextInt(4), new Vector3f(x, y, z), 0, 0, 0f, 0.7f));
+			Mob mob = new Mob(textureBunny, new Vector3f(x, y, z), 0, 0, 0, 0.4f);
+			mobs.add(mob);
+			entities.add(mob);
 		}
-		
-		Mob mob = new Mob(textureBunny, new Vector3f(450, 0, -400), 0, 180, 0, 2f);
-		
+				
 		ArrayList<GuiTexture> guis = new ArrayList<>();
 		
 		//guis.add(new GuiTexture(renderer.getShadowMaptexture(), new Vector2f(0.5f, 0.5f), new Vector2f(0.5f, 0.5f)));
-		
 		GuiRenderer guiRenderer = new GuiRenderer(loader);
 		
 		//Water
@@ -159,10 +160,19 @@ public class MainGameLoop {
 		pSys.setLifeError(3f);
 		pSys.setScaleError(3f);
 		pSys.setDirection(new Vector3f(0, 1, 0), 5.9f);
+		
+		ParticleSystem playerShots = new ParticleSystem(particleTexture, 100f, 70f, 0.001f, 4f, 5f);
+		entities.add(player);
+		
+		Fbo multisampleFbo = new Fbo(Display.getWidth(), Display.getHeight());
+		Fbo outputFbo = new Fbo(Display.getWidth(), Display.getHeight(), Fbo.DEPTH_TEXTURE);
+		PostProcessing.init(loader);
 		while(!Display.isCloseRequested()){
 			//Gamelogic
 			player.move(terrain);
-			mob.move(terrain);
+			for(Mob mob : mobs){
+				mob.move(terrain);
+			}
 			camera.move();
 			picker.update();
 			
@@ -172,38 +182,43 @@ public class MainGameLoop {
 				float y = terrain.getHeightOfTerrain(x, z);
 				pSys.generateParticles(new Vector3f(x, y, z));
 			}
-			
+//			if(Mouse.isButtonDown(0)){
+//				playerShots.setDirection(new Vector3f(180 - player.getRotY(), 0, 0), 0.1f);
+//				playerShots.generateParticles(player.getPosition());
+//			}
 			ParticleMaster.update(camera);
 			
 			renderer.renderShadowMap(entities, light);
-			GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
 			
+			GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
 			fbos.bindReflectionFrameBuffer();
 			float distance = 2 * (camera.getPosition().y - waters.get(0).getHeight());
 			camera.getPosition().y -= distance;
 			camera.invertPitch();
 			renderer.renderScene(entities, normalMapEntities, terrains, lights, camera, new Vector4f(0, 1, 0, -waters.get(0).getHeight() + 0.6f));
-			renderer.processEntity(player);
-			renderer.processEntity(mob);
 			camera.getPosition().y += distance;
 			camera.invertPitch();
 			
 			fbos.bindRefractionFrameBuffer();
 			renderer.renderScene(entities, normalMapEntities, terrains, lights, camera, new Vector4f(0, -1, 0, waters.get(0).getHeight()));
-			renderer.processEntity(player);
-			renderer.processEntity(mob);
 			
+			GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
 			fbos.unbindCurrentFrameBuffer();
-			renderer.processEntity(player);
-			renderer.processEntity(mob);
+			multisampleFbo.bindFrameBuffer();
 			renderer.renderScene(entities, normalMapEntities, terrains, lights, camera, new Vector4f(0, -1, 0, 15000));
 			waterRenderer.render(waters, camera, light);
-			
 			ParticleMaster.renderParticles(camera);
+			multisampleFbo.unbindFrameBuffer();
+			multisampleFbo.resolveToFbo(outputFbo);
+			
+			PostProcessing.doPostProcessing(outputFbo.getColourTexture());
 			
 			guiRenderer.render(guis);
 			DisplayManager.updateDisplay();
 		}
+		PostProcessing.cleanUp();
+		outputFbo.cleanUp();
+		multisampleFbo.cleanUp();
 		ParticleMaster.cleanUp();
 		fbos.cleanUp();
 		waterShader.cleanUp();
