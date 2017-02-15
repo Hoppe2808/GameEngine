@@ -32,6 +32,9 @@ public class StaticShader extends ShaderProgram{
 	private int location_offset;
 	private int location_plane;
 	private int location_shadowMap;
+	private int location_specularMap;
+	private int location_usesSpecularMap;
+	private int location_textureSampler;
 
 	public StaticShader() {
 		super(VERTEX_FILE, FRAGMENT_FILE);
@@ -57,6 +60,9 @@ public class StaticShader extends ShaderProgram{
 		location_offset = super.getUniformLocation("offset");
 		location_plane = super.getUniformLocation("plane");
 		location_shadowMap = super.getUniformLocation("shadowMap");
+		location_specularMap = super.getUniformLocation("specularMap");
+		location_usesSpecularMap = super.getUniformLocation("usesSpecularMap");
+		location_textureSampler = super.getUniformLocation("textureSampler");
 		
 		location_lightPosition = new int[MAX_LIGHTS];
 		location_lightColour = new int[MAX_LIGHTS];
@@ -69,9 +75,12 @@ public class StaticShader extends ShaderProgram{
 	}
 	public void connectTextureUnits(){
 		super.loadInt(location_shadowMap, 5);
-
+		super.loadInt(location_shadowMap, 0);
+		super.loadInt(location_shadowMap, 1);
 	}
-	
+	public void loadUseSpecularMap(boolean useMap){
+		super.loadBoolean(location_usesSpecularMap, useMap);
+	}
 	public void loadClipPlane(Vector4f plane){
 		super.loadVector(location_plane, plane);
 	}
